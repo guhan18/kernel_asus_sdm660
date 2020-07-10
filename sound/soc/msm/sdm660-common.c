@@ -33,6 +33,15 @@
 #define DEFAULT_MCLK_RATE 9600000
 #define MSM_LL_QOS_VALUE 300 /* time in us to ensure LPM doesn't go in C3/C4 */
 
+#ifdef CONFIG_MACH_ASUS_SDM660
+#if 0
+#undef dev_dbg
+#define dev_dbg dev_info
+#undef pr_debug
+#define pr_debug pr_info
+#endif
+#endif
+
 struct dev_config {
 	u32 sample_rate;
 	u32 bit_format;
@@ -203,9 +212,15 @@ static struct wcd_mbhc_config mbhc_cfg = {
 	.swap_gnd_mic = NULL,
 	.hs_ext_micbias = true,
 	.key_code[0] = KEY_MEDIA,
+#ifdef CONFIG_MACH_ASUS_SDM660
+	.key_code[1] = KEY_VOLUMEUP,
+	.key_code[2] = KEY_VOLUMEDOWN,
+	.key_code[3] = 0,
+#else
 	.key_code[1] = KEY_VOICECOMMAND,
 	.key_code[2] = KEY_VOLUMEUP,
 	.key_code[3] = KEY_VOLUMEDOWN,
+#endif
 	.key_code[4] = 0,
 	.key_code[5] = 0,
 	.key_code[6] = 0,
@@ -234,7 +249,11 @@ static struct dev_config mi2s_rx_cfg[] = {
 static struct dev_config mi2s_tx_cfg[] = {
 	[PRIM_MI2S] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
 	[SEC_MI2S]  = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+#ifdef CONFIG_MACH_ASUS_SDM660
+	[TERT_MI2S] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 2},
+#else
 	[TERT_MI2S] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+#endif
 	[QUAT_MI2S] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
 };
 
@@ -2525,6 +2544,10 @@ int msm_mi2s_snd_startup(struct snd_pcm_substream *substream)
 	int index = cpu_dai->id;
 	unsigned int fmt = SND_SOC_DAIFMT_CBS_CFS;
 
+#ifdef CONFIG_MACH_ASUS_SDM660
+	struct msm_asoc_mach_data *pdata = snd_soc_card_get_drvdata(rtd->card);
+#endif
+
 	dev_dbg(rtd->card->dev,
 		"%s: substream = %s  stream = %d, dai name %s, dai ID %d\n",
 		__func__, substream->name, substream->stream,
@@ -2575,6 +2598,15 @@ int msm_mi2s_snd_startup(struct snd_pcm_substream *substream)
 				goto clk_off;
 			}
 		}
+
+#ifdef CONFIG_MACH_ASUS_SDM660
+		if (index == TERT_MI2S) {
+			/* Huaqin add sar switcher by chenyijun5 at 2018/03/20 end*/
+		    msm_cdc_pinctrl_select_active_state(pdata->tert_mi2s_gpio_p);
+			pr_debug("daixianze %s tert_mi2s_gpio_p\n", __func__);
+		}
+#endif
+
 	}
 	mutex_unlock(&mi2s_intf_conf[index].lock);
 	return 0;
@@ -2602,6 +2634,10 @@ void msm_mi2s_snd_shutdown(struct snd_pcm_substream *substream)
 	int port_id = msm_get_port_id(rtd->dai_link->be_id);
 	int index = rtd->cpu_dai->id;
 
+#ifdef CONFIG_MACH_ASUS_SDM660
+    struct msm_asoc_mach_data *pdata = snd_soc_card_get_drvdata(rtd->card);
+#endif
+
 	pr_debug("%s(): substream = %s  stream = %d\n", __func__,
 		 substream->name, substream->stream);
 	if (index < PRIM_MI2S || index > QUAT_MI2S) {
@@ -2611,6 +2647,15 @@ void msm_mi2s_snd_shutdown(struct snd_pcm_substream *substream)
 
 	mutex_lock(&mi2s_intf_conf[index].lock);
 	if (--mi2s_intf_conf[index].ref_cnt == 0) {
+
+#ifdef CONFIG_MACH_ASUS_SDM660
+        if (index == TERT_MI2S)
+		{
+		    msm_cdc_pinctrl_select_sleep_state(pdata->tert_mi2s_gpio_p);
+			pr_debug("daixianze %s tert_mi2s_gpio_p \n", __func__);
+		}
+#endif
+
 		ret = msm_mi2s_set_sclk(substream, false);
 		if (ret < 0)
 			pr_err("%s:clock disable failed for MI2S (%d); ret=%d\n",
@@ -3144,6 +3189,10 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 					"qcom,cdc-dmic-gpios", 0);
 		pdata->ext_spk_gpio_p = of_parse_phandle(pdev->dev.of_node,
 					"qcom,cdc-ext-spk-gpios", 0);
+#ifdef CONFIG_MACH_ASUS_SDM660
+		pdata->tert_mi2s_gpio_p = of_parse_phandle(pdev->dev.of_node,
+				    "qcom,tert-mi2s-gpios", 0);
+#endif
 	}
 
 	/*
