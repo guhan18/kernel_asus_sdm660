@@ -2453,6 +2453,7 @@ static struct snd_soc_dai_link msm_int_dai[] = {
 	},
 
 #ifdef CONFIG_MACH_ASUS_SDM660
+	{/* hw:x,40 */
 		.name = "Tertiary MI2S_TX Hostless",
 		.stream_name = "Tertiary MI2S_TX Hostless",
 		.cpu_dai_name = "TERT_MI2S_TX_HOSTLESS",

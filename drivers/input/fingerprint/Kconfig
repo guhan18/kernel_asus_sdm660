@@ -34,4 +34,4 @@ config GOODIX_FP
 
 endif
 
-#endif
+endif
