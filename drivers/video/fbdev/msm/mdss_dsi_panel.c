@@ -380,7 +380,7 @@ free:
 ret:
 	return rc;
 }
-#ifdef CONFIG_MACH_ASUS_SDM660
+#if defined(CONFIG_MACH_ASUS_SDM660) && defined(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_X00TD)
 extern long syna_gesture_mode;
 #endif
 int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
@@ -507,7 +507,7 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			gpio_set_value((ctrl_pdata->disp_en_gpio), 0);
 			gpio_free(ctrl_pdata->disp_en_gpio);
 		}
-#ifdef CONFIG_MACH_ASUS_SDM660
+#if defined(CONFIG_MACH_ASUS_SDM660) && defined(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_X00TD)
 		printk("qimk panel name:%s\n",mdss_mdp_panel);
 		if(strstr(mdss_mdp_panel,"qcom,mdss_dsi_td4310_1080p_video_txd"))
 		{
