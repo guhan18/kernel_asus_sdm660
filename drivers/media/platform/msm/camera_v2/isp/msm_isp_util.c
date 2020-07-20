@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1464,6 +1464,8 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 int msm_isp_proc_cmd(struct vfe_device *vfe_dev, void *arg)
 {
 	int rc = 0, i;
+	uint32_t cfg_data_onstack[SZ_4K / sizeof(uint32_t)];
+	struct msm_vfe_reg_cfg_cmd cfg_cmd_onstack[20];
 	struct msm_vfe_cfg_cmd2 *proc_cmd = arg;
 	struct msm_vfe_reg_cfg_cmd *reg_cfg_cmd;
 	uint32_t *cfg_data = NULL;
@@ -1473,12 +1475,16 @@ int msm_isp_proc_cmd(struct vfe_device *vfe_dev, void *arg)
 		return -EINVAL;
 	}
 
-	reg_cfg_cmd = kzalloc(sizeof(struct msm_vfe_reg_cfg_cmd)*
-		proc_cmd->num_cfg, GFP_KERNEL);
-	if (!reg_cfg_cmd) {
-		pr_err("%s: reg_cfg alloc failed\n", __func__);
-		rc = -ENOMEM;
-		goto reg_cfg_failed;
+	if (proc_cmd->num_cfg <= ARRAY_SIZE(cfg_cmd_onstack)) {
+		reg_cfg_cmd = cfg_cmd_onstack;
+	} else {
+		reg_cfg_cmd = kmalloc(sizeof(struct msm_vfe_reg_cfg_cmd)*
+			proc_cmd->num_cfg, GFP_KERNEL);
+		if (!reg_cfg_cmd) {
+			pr_err("%s: reg_cfg alloc failed\n", __func__);
+			rc = -ENOMEM;
+			goto reg_cfg_failed;
+		}
 	}
 
 	if (copy_from_user(reg_cfg_cmd,
@@ -1489,11 +1495,15 @@ int msm_isp_proc_cmd(struct vfe_device *vfe_dev, void *arg)
 	}
 
 	if (proc_cmd->cmd_len > 0) {
-		cfg_data = kzalloc(proc_cmd->cmd_len, GFP_KERNEL);
-		if (!cfg_data) {
-			pr_err("%s: cfg_data alloc failed\n", __func__);
-			rc = -ENOMEM;
-			goto cfg_data_failed;
+		if (proc_cmd->cmd_len <= sizeof(cfg_data_onstack)) {
+			cfg_data = cfg_data_onstack;
+		} else {
+			cfg_data = kmalloc(proc_cmd->cmd_len, GFP_KERNEL);
+			if (!cfg_data) {
+				pr_err("%s: cfg_data alloc failed\n", __func__);
+				rc = -ENOMEM;
+				goto cfg_data_failed;
+			}
 		}
 
 		if (copy_from_user(cfg_data,
@@ -1515,9 +1525,11 @@ int msm_isp_proc_cmd(struct vfe_device *vfe_dev, void *arg)
 	}
 
 copy_cmd_failed:
-	kfree(cfg_data);
+	if (cfg_data != cfg_data_onstack)
+		kfree(cfg_data);
 cfg_data_failed:
-	kfree(reg_cfg_cmd);
+	if (reg_cfg_cmd != cfg_cmd_onstack)
+		kfree(reg_cfg_cmd);
 reg_cfg_failed:
 	return rc;
 }
@@ -2298,7 +2310,7 @@ int msm_isp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	vfe_dev->isp_raw0_debug = 0;
 	vfe_dev->isp_raw1_debug = 0;
 	vfe_dev->isp_raw2_debug = 0;
-	vfe_dev->irq_sof_id = 0;
+
 	if (vfe_dev->hw_info->vfe_ops.core_ops.init_hw(vfe_dev) < 0) {
 		pr_err("%s: init hardware failed\n", __func__);
 		vfe_dev->vfe_open_cnt--;
