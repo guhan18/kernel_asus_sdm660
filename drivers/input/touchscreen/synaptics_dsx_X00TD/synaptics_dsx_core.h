@@ -469,9 +469,9 @@ struct synaptics_rmi4_exp_fn {
 			unsigned char intr_mask);
 };
 
-int synaptics_rmi4_bus_init(void);
+int synaptics_rmi4_bus_init_X00TD(void);
 
-void synaptics_rmi4_bus_exit(void);
+void synaptics_rmi4_bus_exit_X00TD(void);
 
 void synaptics_rmi4_new_function(struct synaptics_rmi4_exp_fn *exp_fn_module,
 		bool insert);

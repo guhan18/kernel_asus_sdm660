@@ -40,7 +40,7 @@
 #include <linux/types.h>
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
-#include <linux/input/synaptics_dsx.h>
+#include <linux/input/synaptics_dsx_X00TD.h>
 #include "synaptics_dsx_core.h"
 
 #define SPI_READ 0x80
@@ -689,13 +689,13 @@ static struct spi_driver synaptics_rmi4_spi_driver = {
 };
 
 
-int synaptics_rmi4_bus_init(void)
+int synaptics_rmi4_bus_init_X00TD(void)
 {
 	return spi_register_driver(&synaptics_rmi4_spi_driver);
 }
-EXPORT_SYMBOL(synaptics_rmi4_bus_init);
+EXPORT_SYMBOL(synaptics_rmi4_bus_init_X00TD);
 
-void synaptics_rmi4_bus_exit(void)
+void synaptics_rmi4_bus_exit_X00TD(void)
 {
 	kfree(buf);
 
@@ -705,7 +705,7 @@ void synaptics_rmi4_bus_exit(void)
 
 	return;
 }
-EXPORT_SYMBOL(synaptics_rmi4_bus_exit);
+EXPORT_SYMBOL(synaptics_rmi4_bus_exit_X00TD);
 
 MODULE_AUTHOR("Synaptics, Inc.");
 MODULE_DESCRIPTION("Synaptics DSX SPI Bus Support Module");
