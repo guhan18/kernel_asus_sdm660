@@ -2253,6 +2253,7 @@ return:
 ********************************************************/
 static void __exit nvt_driver_exit(void)
 {
+	i2c_del_driver(&nvt_i2c_driver);
 	destroy_gesture();
 
 	if (nvt_wq)
